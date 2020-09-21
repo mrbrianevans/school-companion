@@ -41,6 +41,7 @@ const FlashCardsScreen: React.FC = () => {
     const [flashCards, setFlashCards] = useState(JSON.parse(localStorage.getItem("flashcards")||JSON.stringify(presetFlashcards)))
     const [isCreatingNew, setCreatingNew] = useState(false)
     const [newFlashCard, setNewFlashCard] = useState({question: "", answer: "", rating: 0})
+    const [packId, setPackId] = useState("")
     const questionRef = React.createRef<HTMLDivElement>()
     const addNewFlashCard = (flashcard: FlashCardProperties) =>{
         setNewFlashCard({question: "", answer: "", rating: 0})
@@ -63,7 +64,41 @@ const FlashCardsScreen: React.FC = () => {
         console.log("Saved "+numberOfCards+" cards to localStorage")
     }
     const saveToServer = () => {
-        console.log("Saving to server")
+        fetch("https://brianevans.tech/projects/school-companion/api.php", {
+            method: "PUT",
+            headers: {
+                'Content-Type': "application/json"
+            },
+            body: JSON.stringify({flashcards: flashCards, metadata: {id: packId}}),
+            mode: "cors"
+        })
+            .then(r  => console.log(r))
+    }
+    const createOnServer = () => {
+        fetch("https://brianevans.tech/projects/school-companion/api.php", {
+            method: "POST",
+            headers: {
+                'Content-Type': "application/json"
+            },
+            body: JSON.stringify(flashCards),
+            mode: "no-cors"
+        })
+            .then(r  => console.log(r))
+    }
+    const fetchFromServer = () => {
+        fetch("https://brianevans.tech/projects/school-companion/api.php?packId=" + packId,{
+            method: "GET",
+            mode: "no-cors"
+        })
+            .then(r  => r.json())
+            .then(data=>console.log(JSON.stringify(data)))
+    }
+    const deleteFromServer = () => {
+        fetch("https://brianevans.tech/projects/school-companion/api.php?packId=" + packId,{
+            method: "DELETE",
+            mode: "no-cors"
+        })
+            .then(r  => console.log(r))
     }
     const [importDialogShowing, setImportDialogShowing] = useState(false)
     const importJSON = (json: string) => {
