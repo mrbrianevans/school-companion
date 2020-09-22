@@ -30,7 +30,7 @@ interface FlashCardProperties{
     rating: number
 }
 export type {FlashCardProperties}
-const FlashCardsScreen: React.FC = () => {
+const FlashCardsScreen: React.FC<{presetPackId?: string}> = (props) => {
     const presetFlashcards:FlashCardProperties[] = [
         {question: "What is a PPF?", answer: "The maximum output of two goods if all resources are used and all are used efficiently", rating: 0},
         {question: "What causes an outward shift of a PPF?", answer: "An increase in the quantity of quality of the factors of production", rating: 0},
@@ -41,14 +41,16 @@ const FlashCardsScreen: React.FC = () => {
     const [flashCards, setFlashCards] = useState(JSON.parse(localStorage.getItem("flashcards")||JSON.stringify(presetFlashcards)))
     const [isCreatingNew, setCreatingNew] = useState(false)
     const [newFlashCard, setNewFlashCard] = useState({question: "", answer: "", rating: 0})
-    const [packId, setPackId] = useState("")
+    const [packId, setPackId] = useState(props.presetPackId||"")
     const questionRef = React.createRef<HTMLDivElement>()
     const addNewFlashCard = (flashcard: FlashCardProperties) =>{
+        console.log("Adding new flashcard")
         setNewFlashCard({question: "", answer: "", rating: 0})
         setFlashCards((prevState:FlashCardProperties[]) => [...prevState, flashcard])
         saveLocally()
     }
     const updateRating = (index:number, rating:number) => {
+        console.log("Updating rating to "+rating)
         setFlashCards((prevState:FlashCardProperties[]) => {
             let tempFlashCardsClone:FlashCardProperties[] = prevState
             tempFlashCardsClone[index].rating = rating
@@ -64,34 +66,52 @@ const FlashCardsScreen: React.FC = () => {
         console.log("Saved "+numberOfCards+" cards to localStorage")
     }
     const saveToServer = () => {
+        console.log("Requesting with PUT")
         fetch("https://brianevans.tech/projects/school-companion/api.php", {
             method: "PUT",
             headers: {
                 'Content-Type': "application/json"
             },
-            body: JSON.stringify({flashcards: flashCards, metadata: {id: packId}}),
-            mode: "cors"
+            body: JSON.stringify({flashcards: flashCards, metadata: {id: packId}})
         })
-            .then(r  => console.log(r))
+            .then(r  => r.json())
+            .then(response => {
+                if(response.status){
+                    console.log("Saved successfully")
+                }
+                else console.log("Failed to save")
+            })
     }
     const createOnServer = () => {
+        console.log("Requesting with POST")
         fetch("https://brianevans.tech/projects/school-companion/api.php", {
             method: "POST",
             headers: {
                 'Content-Type': "application/json"
             },
-            body: JSON.stringify(flashCards),
-            mode: "no-cors"
-        })
-            .then(r  => console.log(r))
-    }
-    const fetchFromServer = () => {
-        fetch("https://brianevans.tech/projects/school-companion/api.php?packId=" + packId,{
-            method: "GET",
-            mode: "no-cors"
+            body: JSON.stringify(flashCards)
         })
             .then(r  => r.json())
-            .then(data=>console.log(JSON.stringify(data)))
+            .then(response => {
+                if(response.status){
+                    console.log("New ID is " + response.id)
+                    setPackId(response.id)
+                }
+                else console.log("Failed to save")
+            })
+
+        // let createRequest = new XMLHttpRequest()
+        // createRequest.onreadystatechange = () => {
+        //     console.log("xml update: "+createRequest.readyState+"-"+createRequest.status+createRequest.response)
+        // }
+        // createRequest.open("POST", "https://brianevans.tech/projects/school-companion/api.php", true)
+        // createRequest.setRequestHeader("Content-Type", "application/json")
+        // createRequest.send(JSON.stringify(flashCards))
+    }
+    const fetchFromServer = () => {
+        fetch("https://brianevans.tech/projects/school-companion/api.php?packId=" + packId)
+            .then(r  => r.json())
+            .then(data=>console.log(JSON.stringify(data.flashcards)))
     }
     const deleteFromServer = () => {
         fetch("https://brianevans.tech/projects/school-companion/api.php?packId=" + packId,{
@@ -140,6 +160,7 @@ const FlashCardsScreen: React.FC = () => {
                                        variant={"outlined"} style={{margin: "5px 0"}}
                                        onChange={(event => {
                                            let newQuestion = event.target.value
+                                           console.log("Updating name to "+newQuestion)
                                            setNewFlashCard(prevState =>
                                            ({...prevState, question: newQuestion})
                                        )})}
@@ -150,6 +171,7 @@ const FlashCardsScreen: React.FC = () => {
                                        rows={4} variant={"outlined"} style={{margin: "5px 0"}}
                                        onChange={(event => {
                                            let newAnswer = event.target.value
+                                           console.log("Updating desc to "+newAnswer)
                                            setNewFlashCard(prevState =>
                                            ({...prevState, answer: newAnswer})
                                        )})}
@@ -174,7 +196,8 @@ const FlashCardsScreen: React.FC = () => {
                                 create new<Add/>
                             </Fab>
                             <Fab variant={"extended"} color={"primary"}
-                                 onClick={()=>{saveToServer()}} style={{margin: 5}}
+                                 onClick={()=>{packId.length?saveToServer():createOnServer()}}
+                                 style={{margin: 5}}
                             >
                                 save<Dns/>
                             </Fab>

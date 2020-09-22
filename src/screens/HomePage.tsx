@@ -8,6 +8,7 @@ import WelcomePage from "./WelcomePage";
 import {SubjectListPage} from "./SubjectListPage";
 import SubjectDetailsPage from "./SubjectDetails";
 import FlashCardsScreen from "../flashcards/FlashCardsScreen";
+import FlashCardBrowser from "../flashcards/FlashCardBrowser";
 
 const HomePage: React.FC = () => {
     const [currentPage, switchPage] = useState(Number(localStorage.getItem("page"))||0)
@@ -19,13 +20,13 @@ const HomePage: React.FC = () => {
         {title: "Each Subject", element: <SubjectDetailsPage/>},
         {title: "List of subjects", element: <SubjectListPage/>},
         {title: "Welcome", element: <WelcomePage/>},
-        {title: "Flash cards", element: <FlashCardsScreen/>}
+        {title: "Flash cards", element: <FlashCardBrowser/>}
     ]
     return(
         <Container>
             <Grid container spacing={2}>
                 {pages.map((page: { title: string; element: JSX.Element } , index)=>{
-                    console.log("Page: "+page.title)
+                    // console.log("Page: "+page.title)
                     return(
                     <Block width={"quarter"} key={index}>
                         <Button onClick={()=>{switchPage(index||0)}}>
