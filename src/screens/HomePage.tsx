@@ -7,8 +7,7 @@ import Button from "@material-ui/core/Button";
 import WelcomePage from "./WelcomePage";
 import {SubjectListPage} from "./SubjectListPage";
 import SubjectDetailsPage from "./SubjectDetails";
-import FlashCardsScreen from "../flashcards/FlashCardsScreen";
-import FlashCardBrowser from "../flashcards/FlashCardBrowser";
+import FlashCardNavigator from "../flashcards/FlashCardNavigator";
 
 const HomePage: React.FC = () => {
     const [currentPage, switchPage] = useState(Number(localStorage.getItem("page"))||0)
@@ -20,7 +19,7 @@ const HomePage: React.FC = () => {
         {title: "Each Subject", element: <SubjectDetailsPage/>},
         {title: "List of subjects", element: <SubjectListPage/>},
         {title: "Welcome", element: <WelcomePage/>},
-        {title: "Flash cards", element: <FlashCardBrowser/>}
+        {title: "Flash cards", element: <FlashCardNavigator/>}
     ]
     return(
         <Container>

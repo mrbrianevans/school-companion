@@ -4,8 +4,10 @@ import {Grid} from "@material-ui/core";
 import FlashCard from "./FlashCard";
 import {
     Add,
+    ArrowBack,
     Cancel,
-    DeleteForever, DiscFull,
+    DeleteForever,
+    DiscFull,
     Dns,
     PlayForWork,
     Save
@@ -24,38 +26,71 @@ import AccordionSummary from "@material-ui/core/AccordionSummary";
 import Accordion from "@material-ui/core/Accordion";
 import AccordionDetails from "@material-ui/core/AccordionDetails";
 
-interface FlashCardProperties{
+interface FlashCardProperties {
     question: string,
     answer: string,
-    rating: number
+    rating?: number
 }
+
+interface PackMetadata {
+    id: string,
+    created: number,
+    modified: number,
+    accessed: number,
+    name: string,
+    description: string,
+    count: number
+}
+
+export type {PackMetadata}
 export type {FlashCardProperties}
-const FlashCardsScreen: React.FC<{presetPackId?: string}> = (props) => {
-    const presetFlashcards:FlashCardProperties[] = [
-        {question: "What is a PPF?", answer: "The maximum output of two goods if all resources are used and all are used efficiently", rating: 0},
-        {question: "What causes an outward shift of a PPF?", answer: "An increase in the quantity of quality of the factors of production", rating: 0},
-        {question: "What are the factors of production?", answer: "Land, labour, capital, entreprenuership or enterprise", rating: 0},
-        {question: "What are the rewards of the factors of production?", answer: "Rents, royalties, wages, interest and profit", rating: 0},
-        {question: "What is opportunity cost?", answer: "The benefit lost of the next best alternative forgone", rating: 0}
+const FlashCardsScreen: React.FC<{ presetPackId?: string, callbackFunction: () => void }> = (props) => {
+    const presetFlashcards: FlashCardProperties[] = [
+        {
+            question: "What is a PPF?",
+            answer: "The maximum output of two goods if all resources are used and all are used efficiently",
+            rating: 0
+        },
+        {
+            question: "What causes an outward shift of a PPF?",
+            answer: "An increase in the quantity of quality of the factors of production",
+            rating: 0
+        },
+        {
+            question: "What are the factors of production?",
+            answer: "Land, labour, capital, entreprenuership or enterprise",
+            rating: 0
+        },
+        {
+            question: "What are the rewards of the factors of production?",
+            answer: "Rents, royalties, wages, interest and profit",
+            rating: 0
+        },
+        {
+            question: "What is opportunity cost?",
+            answer: "The benefit lost of the next best alternative forgone",
+            rating: 0
+        }
     ]
-    const [flashCards, setFlashCards] = useState(JSON.parse(localStorage.getItem("flashcards")||JSON.stringify(presetFlashcards)))
+    const [flashCards, setFlashCards] = useState(JSON.parse(localStorage.getItem("flashcards") || JSON.stringify(presetFlashcards)))
+    const [metadata, setMetadata] = useState<PackMetadata | undefined>(undefined)
     const [isCreatingNew, setCreatingNew] = useState(false)
     const [newFlashCard, setNewFlashCard] = useState({question: "", answer: "", rating: 0})
-    const [packId, setPackId] = useState(props.presetPackId||"")
+    const [packId, setPackId] = useState(props.presetPackId || "")
     const questionRef = React.createRef<HTMLDivElement>()
-    const addNewFlashCard = (flashcard: FlashCardProperties) =>{
+    const addNewFlashCard = (flashcard: FlashCardProperties) => {
         console.log("Adding new flashcard")
         setNewFlashCard({question: "", answer: "", rating: 0})
-        setFlashCards((prevState:FlashCardProperties[]) => [...prevState, flashcard])
+        setFlashCards((prevState: FlashCardProperties[]) => [...prevState, flashcard])
         saveLocally()
     }
-    const updateRating = (index:number, rating:number) => {
-        console.log("Updating rating to "+rating)
-        setFlashCards((prevState:FlashCardProperties[]) => {
-            let tempFlashCardsClone:FlashCardProperties[] = prevState
+    const updateRating = (index: number, rating: number) => {
+        console.log("Updating rating to " + rating)
+        setFlashCards((prevState: FlashCardProperties[]) => {
+            let tempFlashCardsClone: FlashCardProperties[] = prevState
             tempFlashCardsClone[index].rating = rating
 
-            return(tempFlashCardsClone)
+            return (tempFlashCardsClone)
         })
 
         saveLocally()
@@ -63,7 +98,7 @@ const FlashCardsScreen: React.FC<{presetPackId?: string}> = (props) => {
     const saveLocally = () => {
         let numberOfCards = flashCards.length
         localStorage.setItem("flashcards", JSON.stringify(flashCards))
-        console.log("Saved "+numberOfCards+" cards to localStorage")
+        console.log("Saved " + numberOfCards + " cards to localStorage")
     }
     const saveToServer = () => {
         console.log("Requesting with PUT")
@@ -74,12 +109,11 @@ const FlashCardsScreen: React.FC<{presetPackId?: string}> = (props) => {
             },
             body: JSON.stringify({flashcards: flashCards, metadata: {id: packId}})
         })
-            .then(r  => r.json())
+            .then(r => r.json())
             .then(response => {
-                if(response.status){
+                if (response.status) {
                     console.log("Saved successfully")
-                }
-                else console.log("Failed to save")
+                } else console.log("Failed to save")
             })
     }
     const createOnServer = () => {
@@ -91,46 +125,57 @@ const FlashCardsScreen: React.FC<{presetPackId?: string}> = (props) => {
             },
             body: JSON.stringify(flashCards)
         })
-            .then(r  => r.json())
+            .then(r => r.json())
             .then(response => {
-                if(response.status){
+                if (response.status) {
                     console.log("New ID is " + response.id)
                     setPackId(response.id)
-                }
-                else console.log("Failed to save")
+                } else console.log("Failed to save")
             })
-
-        // let createRequest = new XMLHttpRequest()
-        // createRequest.onreadystatechange = () => {
-        //     console.log("xml update: "+createRequest.readyState+"-"+createRequest.status+createRequest.response)
-        // }
-        // createRequest.open("POST", "https://brianevans.tech/projects/school-companion/api.php", true)
-        // createRequest.setRequestHeader("Content-Type", "application/json")
-        // createRequest.send(JSON.stringify(flashCards))
     }
+    const [hasRequestedFromServer, setRequestedFromServer] = useState(!packId)
+    const [hasLoadedFromServer, setLoadedFromServer] = useState(false)
     const fetchFromServer = () => {
+        console.log("Fetching " + packId + " from server")
         fetch("https://brianevans.tech/projects/school-companion/api.php?packId=" + packId)
-            .then(r  => r.json())
-            .then(data=>console.log(JSON.stringify(data.flashcards)))
+            .then(r => r.json())
+            .then(data => {
+                if (data.status) {
+                    // console.log(JSON.stringify(data.metadata))
+                    console.log(data.metadata.id + " received from server")
+                    // console.log(JSON.stringify(data.flashcards))
+                    setFlashCards(data.flashcards)
+                    setMetadata(data.metadata)
+                } else {
+                    console.log("Did not receive the flashcards. Error with PackId")
+                }
+                setLoadedFromServer(true)
+            })
+    }
+    if (!hasRequestedFromServer) {
+        setRequestedFromServer(true)
+        fetchFromServer()
     }
     const deleteFromServer = () => {
-        fetch("https://brianevans.tech/projects/school-companion/api.php?packId=" + packId,{
+        fetch("https://brianevans.tech/projects/school-companion/api.php?packId=" + packId, {
             method: "DELETE",
             mode: "no-cors"
         })
-            .then(r  => console.log(r))
+            .then(r => console.log(r))
     }
     const [importDialogShowing, setImportDialogShowing] = useState(false)
     const importJSON = (json: string) => {
         hideImportDialog()
-        try{
+        try {
             const importedCards = JSON.parse(json)
-        for (const importedCardsKey in importedCards) {
-            addNewFlashCard({question: "", answer: "", rating: 0,
-                ...importedCards[importedCardsKey]})
-        }
-        console.log("Importing: "+json)
-        }catch (e) {
+            for (const importedCardsKey in importedCards) {
+                addNewFlashCard({
+                    question: "", answer: "", rating: 0,
+                    ...importedCards[importedCardsKey]
+                })
+            }
+            console.log("Importing: " + json)
+        } catch (e) {
             alert("Could not read. Please check JSON format")
         }
     }
@@ -140,30 +185,37 @@ const FlashCardsScreen: React.FC<{presetPackId?: string}> = (props) => {
     }
     const [detectImportPaste, setDetectImportPaste] = useState(true)
     const [importJsonTextField, setImportJsonField] = useState("")
+    const formatDate = (seconds: number) => {
+        let dateObject = new Date(seconds * 1000)
+        console.log(dateObject)
+        return dateObject.toDateString()
+    }
     return (
-            <>
-                <Paper elevation={3}
-                       style={{margin: "10px", padding: "0 10px 10px 10px",textAlign: "center"}}>
-                    <Typography variant={"h4"} display={"inline"} color={"primary"} gutterBottom>
-                        Flash Cards
-                    </Typography>
-                    <Typography variant={"body2"} display={"inline"} color={"secondary"} gutterBottom component={"sup"}>
-                       [ v1 ]
-                    </Typography>
-                </Paper>
+        <>
+            <Paper elevation={3}
+                   style={{margin: "10px", padding: "0 10px 10px 10px", textAlign: "center"}}>
+                <Typography variant={"h4"} display={"inline"} color={"primary"} gutterBottom>
+                    Flash Cards
+                </Typography>
+                <Typography variant={"body2"} display={"inline"} color={"secondary"} gutterBottom
+                            component={"sup"}>
+                    [ v1 ]
+                </Typography>
+            </Paper>
 
             <Grid container spacing={2} alignItems={"stretch"} justify={"center"} direction={"row"}>
-                <Grid item xs>
-                    {isCreatingNew?
+                <Grid item xs={6}>
+                    {isCreatingNew ?
                         <Paper elevation={3} style={{padding: 10, margin: 10}}>
                             <TextField label={"Question"} fullWidth
                                        variant={"outlined"} style={{margin: "5px 0"}}
                                        onChange={(event => {
                                            let newQuestion = event.target.value
-                                           console.log("Updating name to "+newQuestion)
+                                           console.log("Updating name to " + newQuestion)
                                            setNewFlashCard(prevState =>
-                                           ({...prevState, question: newQuestion})
-                                       )})}
+                                               ({...prevState, question: newQuestion})
+                                           )
+                                       })}
                                        value={newFlashCard.question}
                                        ref={questionRef} autoFocus
                             />
@@ -171,44 +223,58 @@ const FlashCardsScreen: React.FC<{presetPackId?: string}> = (props) => {
                                        rows={4} variant={"outlined"} style={{margin: "5px 0"}}
                                        onChange={(event => {
                                            let newAnswer = event.target.value
-                                           console.log("Updating desc to "+newAnswer)
+                                           console.log("Updating desc to " + newAnswer)
                                            setNewFlashCard(prevState =>
-                                           ({...prevState, answer: newAnswer})
-                                       )})}
+                                               ({...prevState, answer: newAnswer})
+                                           )
+                                       })}
                                        value={newFlashCard.answer}
                             />
-                            <Fab  color={"primary"} variant={"round"}
-                                 onClick={()=>{
+                            <Fab color={"primary"} variant={"round"}
+                                 onClick={() => {
                                      addNewFlashCard(newFlashCard)
                                      setCreatingNew(false)
                                  }}
-                                  disabled={!newFlashCard.question.length}
+                                 disabled={!newFlashCard.question.length}
                             ><Save/></Fab>
-                            <Fab  color={"secondary"} variant={"round"} style={{float: "right"}}
-                                 onClick={()=>{setCreatingNew(false)}}
+                            <Fab color={"secondary"} variant={"round"} style={{float: "right"}}
+                                 onClick={() => {
+                                     setCreatingNew(false)
+                                 }}
                             ><Cancel/></Fab>
                         </Paper>
                         :
                         <>
                             <Fab variant={"extended"} color={"primary"}
-                                 onClick={()=>{setCreatingNew(true)}} style={{margin: 5}}
+                                 onClick={() => {
+                                     setCreatingNew(true)
+                                 }} style={{margin: 5}}
                             >
                                 create new<Add/>
                             </Fab>
                             <Fab variant={"extended"} color={"primary"}
-                                 onClick={()=>{packId.length?saveToServer():createOnServer()}}
+                                 onClick={() => {
+                                     packId.length ? saveToServer() : createOnServer()
+                                 }}
                                  style={{margin: 5}}
                             >
                                 save<Dns/>
                             </Fab>
                             <Fab variant={"extended"} color={"primary"}
-                                 onClick={()=>{setImportDialogShowing(true)}} style={{margin: 5}}
+                                 onClick={() => {
+                                     setImportDialogShowing(true)
+                                 }} style={{margin: 5}}
                             >
                                 import<PlayForWork/>
                             </Fab>
+                            <Fab variant={"extended"} color={"primary"}
+                                 onClick={props.callbackFunction} style={{margin: 5}}
+                            >
+                                Back to browser<ArrowBack/>
+                            </Fab>
                             <Fab variant={"extended"} color={"secondary"}
-                                 onClick={()=>{
-                                     setFlashCards((prevState:FlashCardProperties[]) =>[])
+                                 onClick={() => {
+                                     setFlashCards((prevState: FlashCardProperties[]) => [])
                                      localStorage.removeItem("flashcards")
                                  }} style={{margin: 5}}
                             >
@@ -226,7 +292,7 @@ const FlashCardsScreen: React.FC<{presetPackId?: string}> = (props) => {
                                     <FormControlLabel label={"Auto detect paste"}
                                                       control={
                                                           <Switch checked={detectImportPaste}
-                                                                  onChange={()=>
+                                                                  onChange={() =>
                                                                       setDetectImportPaste(
                                                                           prevState => !prevState)
                                                                   }
@@ -235,15 +301,15 @@ const FlashCardsScreen: React.FC<{presetPackId?: string}> = (props) => {
                                         label={"JSON list of flashcards"}
                                         fullWidth autoFocus rows={10} multiline
                                         onPaste={event => {
-                                            if(detectImportPaste)
+                                            if (detectImportPaste)
                                                 importJSON(event.clipboardData.getData("Text"))
                                         }}
                                         value={importJsonTextField}
                                         onChange={event => setImportJsonField(event.target.value)}
-                                        />
+                                    />
                                 </DialogContent>
                                 <div>
-                                    <Button onClick={()=>importJSON(importJsonTextField)}
+                                    <Button onClick={() => importJSON(importJsonTextField)}
                                             color={"primary"} variant={"text"}
                                             style={{width: "50%"}}>
                                         <PlayForWork/>Import
@@ -259,28 +325,41 @@ const FlashCardsScreen: React.FC<{presetPackId?: string}> = (props) => {
                     }
 
                 </Grid>
-
-            {flashCards.map((flashCardDetails:FlashCardProperties, index:number) => (
-                <FlashCard question={flashCardDetails.question}
-                           answer={flashCardDetails.answer} key={index}
-                           ratingCallback={(rating)=>{updateRating(index, rating)}}
-                           rating={flashCardDetails.rating}
-                />
-            ))}
+                <Grid item xs={6}>
+                    {hasLoadedFromServer && metadata &&
+                    <Paper elevation={3} style={{padding: 10, margin: 10}}>
+                        <Typography>ID: {metadata.id}</Typography>
+                        <Typography>Created: {formatDate(metadata.created)}</Typography>
+                        <Typography>Modified: {formatDate(metadata.modified)}</Typography>
+                        <Typography>Accessed: {formatDate(metadata.accessed)}</Typography>
+                    </Paper>
+                    }
+                </Grid>
+                {flashCards.map((flashCardDetails: FlashCardProperties, index: number) => (
+                    <FlashCard question={flashCardDetails.question}
+                               answer={flashCardDetails.answer} key={index}
+                               ratingCallback={(rating) => {
+                                   updateRating(index, rating)
+                               }}
+                               rating={flashCardDetails.rating}
+                    />
+                ))}
             </Grid>
-                <Typography variant={"h4"} color={"primary"}>Dev stats</Typography>
-                <Accordion>
-                    <AccordionSummary expandIcon={<Save/>}><Typography variant={"h5"}>State</Typography></AccordionSummary>
-                    <AccordionDetails><Typography>{JSON.stringify(flashCards)}</Typography></AccordionDetails>
-                </Accordion>
-                <Accordion>
-                    <AccordionSummary expandIcon={<DiscFull/>}><Typography variant={"h5"}>Local storage</Typography></AccordionSummary>
-                    <AccordionDetails><Typography>{JSON.stringify(localStorage.getItem("flashcards"))}</Typography></AccordionDetails>
-                </Accordion>
-                <Accordion>
-                    <AccordionSummary expandIcon={<Dns/>}><Typography variant={"h5"}>Server storage</Typography></AccordionSummary>
-                    <AccordionDetails><Typography>{JSON.stringify(["Not yet functional"])}</Typography></AccordionDetails>
-                </Accordion>
+            <Typography variant={"h4"} color={"primary"}>Dev stats</Typography>
+            <Accordion>
+                <AccordionSummary expandIcon={<Save/>}><Typography variant={"h5"}>State</Typography></AccordionSummary>
+                <AccordionDetails><Typography>{JSON.stringify(flashCards)}</Typography></AccordionDetails>
+            </Accordion>
+            <Accordion>
+                <AccordionSummary expandIcon={<DiscFull/>}><Typography variant={"h5"}>Local
+                    storage</Typography></AccordionSummary>
+                <AccordionDetails><Typography>{JSON.stringify(localStorage.getItem("flashcards"))}</Typography></AccordionDetails>
+            </Accordion>
+            <Accordion>
+                <AccordionSummary expandIcon={<Dns/>}><Typography variant={"h5"}>Server
+                    storage</Typography></AccordionSummary>
+                <AccordionDetails><Typography>{JSON.stringify(["Not yet functional"])}</Typography></AccordionDetails>
+            </Accordion>
         </>
 
     )

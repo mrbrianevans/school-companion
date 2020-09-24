@@ -1,7 +1,7 @@
-import React, {useEffect, useState} from "react";
+import React, {useState} from "react";
 import {Paper, Typography} from "@material-ui/core";
 import IconButton from "@material-ui/core/IconButton";
-import {Cached, Star, StarBorder, Visibility, VisibilityOff} from "@material-ui/icons";
+import {Star, StarBorder, Visibility, VisibilityOff} from "@material-ui/icons";
 import Grid from "@material-ui/core/Grid";
 import {FlashCardProperties} from "./FlashCardsScreen";
 
@@ -11,8 +11,8 @@ interface FlashCardProps extends FlashCardProperties{
 
 const FlashCard: React.FC<FlashCardProps> = (props) => {
     const [answerShowing, showHideAnswer] = useState(false)
-    const [starRating, setStarRating] = useState(props.rating)
-    const updateRating = (rating:number) => {
+    const [starRating, setStarRating] = useState(props.rating || 0)
+    const updateRating = (rating: number) => {
         setStarRating(rating)
         props.ratingCallback(rating)
     }
