@@ -25,6 +25,7 @@ import FormControlLabel from "@material-ui/core/FormControlLabel";
 import AccordionSummary from "@material-ui/core/AccordionSummary";
 import Accordion from "@material-ui/core/Accordion";
 import AccordionDetails from "@material-ui/core/AccordionDetails";
+import CircularProgress from "@material-ui/core/CircularProgress";
 
 interface FlashCardProperties {
     question: string,
@@ -158,8 +159,7 @@ const FlashCardsScreen: React.FC<{ presetPackId?: string, callbackFunction: () =
     }
     const deleteFromServer = () => {
         fetch("https://brianevans.tech/projects/school-companion/api.php?packId=" + packId, {
-            method: "DELETE",
-            mode: "no-cors"
+            method: "DELETE"
         })
             .then(r => console.log(r))
     }
@@ -185,7 +185,8 @@ const FlashCardsScreen: React.FC<{ presetPackId?: string, callbackFunction: () =
     }
     const [detectImportPaste, setDetectImportPaste] = useState(true)
     const [importJsonTextField, setImportJsonField] = useState("")
-    const formatDate = (seconds: number) => {
+    const formatDate = (seconds: number | undefined) => {
+        if (seconds === undefined) return ""
         let dateObject = new Date(seconds * 1000)
         console.log(dateObject)
         return dateObject.toDateString()
@@ -274,11 +275,13 @@ const FlashCardsScreen: React.FC<{ presetPackId?: string, callbackFunction: () =
                             </Fab>
                             <Fab variant={"extended"} color={"secondary"}
                                  onClick={() => {
+                                     deleteFromServer()
                                      setFlashCards((prevState: FlashCardProperties[]) => [])
                                      localStorage.removeItem("flashcards")
+                                     props.callbackFunction()
                                  }} style={{margin: 5}}
                             >
-                                delete all<DeleteForever/>
+                                delete pack<DeleteForever/>
                             </Fab>
                             <Dialog open={importDialogShowing} onClose={hideImportDialog}>
                                 <DialogTitle>Import</DialogTitle>
@@ -326,16 +329,17 @@ const FlashCardsScreen: React.FC<{ presetPackId?: string, callbackFunction: () =
 
                 </Grid>
                 <Grid item xs={6}>
-                    {hasLoadedFromServer && metadata &&
                     <Paper elevation={3} style={{padding: 10, margin: 10}}>
-                        <Typography>ID: {metadata.id}</Typography>
-                        <Typography>Created: {formatDate(metadata.created)}</Typography>
-                        <Typography>Modified: {formatDate(metadata.modified)}</Typography>
-                        <Typography>Accessed: {formatDate(metadata.accessed)}</Typography>
+                        {hasLoadedFromServer ? <>
+                            <Typography>ID: {metadata?.id}</Typography>
+                            <Typography>Created: {formatDate(metadata?.created)}</Typography>
+                            <Typography>Modified: {formatDate(metadata?.modified)}</Typography>
+                            <Typography>Accessed: {formatDate(metadata?.accessed)}</Typography>
+                        </> : <CircularProgress/>
+                        }
                     </Paper>
-                    }
                 </Grid>
-                {flashCards.map((flashCardDetails: FlashCardProperties, index: number) => (
+                {hasLoadedFromServer ? flashCards.map((flashCardDetails: FlashCardProperties, index: number) => (
                     <FlashCard question={flashCardDetails.question}
                                answer={flashCardDetails.answer} key={index}
                                ratingCallback={(rating) => {
@@ -343,7 +347,7 @@ const FlashCardsScreen: React.FC<{ presetPackId?: string, callbackFunction: () =
                                }}
                                rating={flashCardDetails.rating}
                     />
-                ))}
+                )) : <CircularProgress/>}
             </Grid>
             <Typography variant={"h4"} color={"primary"}>Dev stats</Typography>
             <Accordion>
