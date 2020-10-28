@@ -45,17 +45,19 @@ interface PackMetadata {
 
 export type {PackMetadata}
 export type {FlashCardProperties}
-const FlashCardsScreen: React.FC<{ presetPackId?: string, callbackFunction: () => void }> = (props) => {
-    const presetFlashcards: FlashCardProperties[] = [
-        {
-            question: "What is a PPF?",
-            answer: "The maximum output of two goods if all resources are used and all are used efficiently",
-            rating: 0
-        },
-        {
-            question: "What causes an outward shift of a PPF?",
-            answer: "An increase in the quantity of quality of the factors of production",
-            rating: 0
+const FlashCardsScreen: React.FC<{ presetPackId?: string, callbackFunction: () => void }> =
+    (props) => {
+        let presetFlashcards: FlashCardProperties[] = [
+            {
+                question: "What is a PPF?",
+                answer: "The maximum output of two goods if all resources are used and all are used " +
+                    "efficiently",
+                rating: 0
+            },
+            {
+                question: "What causes an outward shift of a PPF?",
+                answer: "An increase in the quantity of quality of the factors of production",
+                rating: 0
         },
         {
             question: "What are the factors of production?",
@@ -67,26 +69,29 @@ const FlashCardsScreen: React.FC<{ presetPackId?: string, callbackFunction: () =
             answer: "Rents, royalties, wages, interest and profit",
             rating: 0
         },
-        {
-            question: "What is opportunity cost?",
-            answer: "The benefit lost of the next best alternative forgone",
-            rating: 0
+            {
+                question: "What is opportunity cost?",
+                answer: "The benefit lost of the next best alternative forgone",
+                rating: 0
+            }
+        ]
+        presetFlashcards = []
+        const [flashCards, setFlashCards] = useState(JSON.parse(localStorage.getItem("flashcards")
+            || JSON.stringify(presetFlashcards)))
+        const [metadata, setMetadata] = useState<PackMetadata | undefined>(undefined)
+        const [packId, setPackId] = useState(props.presetPackId || "")
+        const needsLoading = Boolean(packId.length)
+        const [isCreatingNew, setCreatingNew] = useState(!needsLoading)
+        const [newFlashCard, setNewFlashCard] = useState({question: "", answer: "", rating: 0})
+        const questionRef = React.createRef<HTMLDivElement>()
+        const addNewFlashCard = (flashcard: FlashCardProperties) => {
+            console.log("Adding new flashcard")
+            setNewFlashCard({question: "", answer: "", rating: 0})
+            setFlashCards((prevState: FlashCardProperties[]) => [...prevState, flashcard])
+            saveLocally()
         }
-    ]
-    const [flashCards, setFlashCards] = useState(JSON.parse(localStorage.getItem("flashcards") || JSON.stringify(presetFlashcards)))
-    const [metadata, setMetadata] = useState<PackMetadata | undefined>(undefined)
-    const [isCreatingNew, setCreatingNew] = useState(false)
-    const [newFlashCard, setNewFlashCard] = useState({question: "", answer: "", rating: 0})
-    const [packId, setPackId] = useState(props.presetPackId || "")
-    const questionRef = React.createRef<HTMLDivElement>()
-    const addNewFlashCard = (flashcard: FlashCardProperties) => {
-        console.log("Adding new flashcard")
-        setNewFlashCard({question: "", answer: "", rating: 0})
-        setFlashCards((prevState: FlashCardProperties[]) => [...prevState, flashcard])
-        saveLocally()
-    }
-    const updateRating = (index: number, rating: number) => {
-        console.log("Updating rating to " + rating)
+        const updateRating = (index: number, rating: number) => {
+            console.log("Updating rating to " + rating)
         setFlashCards((prevState: FlashCardProperties[]) => {
             let tempFlashCardsClone: FlashCardProperties[] = prevState
             tempFlashCardsClone[index].rating = rating
@@ -131,24 +136,28 @@ const FlashCardsScreen: React.FC<{ presetPackId?: string, callbackFunction: () =
                 if (response.status) {
                     console.log("New ID is " + response.id)
                     setPackId(response.id)
+                    fetchFromServer(response.id)
+                    // after saving to server, sync from server for metadata
                 } else console.log("Failed to save")
             })
     }
-    const [hasRequestedFromServer, setRequestedFromServer] = useState(!packId)
-    const [hasLoadedFromServer, setLoadedFromServer] = useState(false)
-    const fetchFromServer = () => {
-        console.log("Fetching " + packId + " from server")
-        fetch("https://brianevans.tech/projects/school-companion/api.php?packId=" + packId)
-            .then(r => r.json())
-            .then(data => {
-                if (data.status) {
-                    // console.log(JSON.stringify(data.metadata))
-                    console.log(data.metadata.id + " received from server")
-                    // console.log(JSON.stringify(data.flashcards))
-                    setFlashCards(data.flashcards)
-                    setMetadata(data.metadata)
-                } else {
-                    console.log("Did not receive the flashcards. Error with PackId")
+        const [hasRequestedFromServer, setRequestedFromServer] = useState(!needsLoading)
+        const [hasLoadedFromServer, setLoadedFromServer] = useState(!needsLoading)
+        const fetchFromServer = (overridePackId = undefined) => {
+            const fetchingPackId = overridePackId === undefined ? packId : overridePackId
+            console.log("Fetching " + fetchingPackId + " from server")
+            fetch("https://brianevans.tech/projects/school-companion/api.php?packId=" +
+                fetchingPackId)
+                .then(r => r.json())
+                .then(data => {
+                    if (data.status) {
+                        // console.log(JSON.stringify(data.metadata))
+                        console.log(data.metadata.id + " received from server")
+                        // console.log(JSON.stringify(data.flashcards))
+                        setFlashCards(data.flashcards)
+                        setMetadata(data.metadata)
+                    } else {
+                        console.log("Did not receive the flashcards. Error with PackId")
                 }
                 setLoadedFromServer(true)
             })
@@ -185,12 +194,13 @@ const FlashCardsScreen: React.FC<{ presetPackId?: string, callbackFunction: () =
     }
     const [detectImportPaste, setDetectImportPaste] = useState(true)
     const [importJsonTextField, setImportJsonField] = useState("")
-    const formatDate = (seconds: number | undefined) => {
-        if (seconds === undefined) return ""
-        let dateObject = new Date(seconds * 1000)
-        console.log(dateObject)
-        return dateObject.toDateString()
-    }
+        const formatDate = (seconds: number | undefined) => {
+            if (seconds === undefined) return ""
+            let dateObject = new Date(seconds * 1000)
+            // console.log(dateObject)
+            return dateObject.toDateString()
+        }
+        const relevantSaveFunction = packId.length ? saveToServer : createOnServer
     return (
         <>
             <Paper elevation={3}
@@ -254,9 +264,7 @@ const FlashCardsScreen: React.FC<{ presetPackId?: string, callbackFunction: () =
                                 create new<Add/>
                             </Fab>
                             <Fab variant={"extended"} color={"primary"}
-                                 onClick={() => {
-                                     packId.length ? saveToServer() : createOnServer()
-                                 }}
+                                 onClick={() => relevantSaveFunction}
                                  style={{margin: 5}}
                             >
                                 save<Dns/>
@@ -269,14 +277,18 @@ const FlashCardsScreen: React.FC<{ presetPackId?: string, callbackFunction: () =
                                 import<PlayForWork/>
                             </Fab>
                             <Fab variant={"extended"} color={"primary"}
-                                 onClick={props.callbackFunction} style={{margin: 5}}
+                                 onClick={() => {
+                                     relevantSaveFunction()
+                                     props.callbackFunction()
+                                 }
+                                 } style={{margin: 5}}
                             >
                                 Back to browser<ArrowBack/>
                             </Fab>
                             <Fab variant={"extended"} color={"secondary"}
                                  onClick={() => {
                                      deleteFromServer()
-                                     setFlashCards((prevState: FlashCardProperties[]) => [])
+                                     setFlashCards([])
                                      localStorage.removeItem("flashcards")
                                      props.callbackFunction()
                                  }} style={{margin: 5}}
@@ -339,30 +351,39 @@ const FlashCardsScreen: React.FC<{ presetPackId?: string, callbackFunction: () =
                         }
                     </Paper>
                 </Grid>
-                {hasLoadedFromServer ? flashCards.map((flashCardDetails: FlashCardProperties, index: number) => (
-                    <FlashCard question={flashCardDetails.question}
-                               answer={flashCardDetails.answer} key={index}
-                               ratingCallback={(rating) => {
-                                   updateRating(index, rating)
-                               }}
-                               rating={flashCardDetails.rating}
-                    />
-                )) : <CircularProgress/>}
+                {hasLoadedFromServer ?
+                    flashCards.map((flashCardDetails: FlashCardProperties, index: number) => (
+                        <FlashCard question={flashCardDetails.question}
+                                   answer={flashCardDetails.answer} key={index}
+                                   ratingCallback={(rating) => {
+                                       updateRating(index, rating)
+                                   }}
+                                   rating={flashCardDetails.rating}
+                        />
+                    )) : <CircularProgress/>}
             </Grid>
             <Typography variant={"h4"} color={"primary"}>Dev stats</Typography>
             <Accordion>
-                <AccordionSummary expandIcon={<Save/>}><Typography variant={"h5"}>State</Typography></AccordionSummary>
-                <AccordionDetails><Typography>{JSON.stringify(flashCards)}</Typography></AccordionDetails>
+                <AccordionSummary expandIcon={<Save/>}>
+                    <Typography variant={"h5"}>State</Typography>
+                </AccordionSummary>
+                <AccordionDetails>
+                    <Typography>{JSON.stringify(flashCards)}</Typography>
+                </AccordionDetails>
             </Accordion>
             <Accordion>
                 <AccordionSummary expandIcon={<DiscFull/>}><Typography variant={"h5"}>Local
                     storage</Typography></AccordionSummary>
-                <AccordionDetails><Typography>{JSON.stringify(localStorage.getItem("flashcards"))}</Typography></AccordionDetails>
+                <AccordionDetails>
+                    <Typography>{JSON.stringify(localStorage.getItem("flashcards"))}</Typography>
+                </AccordionDetails>
             </Accordion>
             <Accordion>
                 <AccordionSummary expandIcon={<Dns/>}><Typography variant={"h5"}>Server
                     storage</Typography></AccordionSummary>
-                <AccordionDetails><Typography>{JSON.stringify(["Not yet functional"])}</Typography></AccordionDetails>
+                <AccordionDetails>
+                    <Typography>{JSON.stringify(["Not yet functional"])}</Typography>
+                </AccordionDetails>
             </Accordion>
         </>
 

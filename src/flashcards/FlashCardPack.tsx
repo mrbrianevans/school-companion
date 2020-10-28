@@ -1,15 +1,17 @@
 import React, {Dispatch} from "react";
 import {Paper, Typography} from "@material-ui/core";
-import {Star, StarBorder} from "@material-ui/icons";
+import {DeleteForever, Slideshow, Star, StarBorder} from "@material-ui/icons";
 import Grid from "@material-ui/core/Grid";
 import Badge from "@material-ui/core/Badge";
+import IconButton from "@material-ui/core/IconButton";
 
 interface FlashCardPackProps {
     rating: number,
     name: string,
     description: string,
     onSelect: Dispatch<any>,
-    count: number
+    count: number,
+    deleteCallback: () => void
 }
 
 const FlashCardPack: React.FC<FlashCardPackProps> = (props) => {
@@ -27,7 +29,7 @@ const FlashCardPack: React.FC<FlashCardPackProps> = (props) => {
                         cursor: "pointer"
                     }}
                     onClick={() => {
-                        props.onSelect(props.name)
+                        // props.onSelect(props.name)
                         console.log("User chose " + props.name)
                     }}
                 >
@@ -42,6 +44,9 @@ const FlashCardPack: React.FC<FlashCardPackProps> = (props) => {
                     {Array(5 - props.rating).fill(0).map((element, index) => (
                         <StarBorder style={{color: "black"}} key={index}/>
                     ))}
+                    <IconButton onClick={() => props.onSelect(props.name)} color={"primary"}>
+                        <Slideshow/></IconButton>
+                    <IconButton onClick={props.deleteCallback} color={"secondary"}> <DeleteForever/></IconButton>
                 </Paper>
             </Badge>
         </Grid>

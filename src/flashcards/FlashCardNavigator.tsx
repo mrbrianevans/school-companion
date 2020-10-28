@@ -4,9 +4,10 @@ import FlashCardBrowser from "./FlashCardBrowser";
 
 const FlashCardNavigator: React.FC = () => {
     const [packId, setPackId] = useState<string | undefined>()
+    localStorage.removeItem("flashcards")
     return (
         <>
-            {packId ?
+            {packId !== undefined ?
                 <FlashCardsScreen presetPackId={packId}
                                   callbackFunction={() => setPackId(undefined)}/>
                 :

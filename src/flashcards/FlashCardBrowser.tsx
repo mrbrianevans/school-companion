@@ -20,8 +20,18 @@ const FlashCardBrowser: React.FC<{ onSelect: Dispatch<any> }> = (props) => {
         getFlashcards()
     }
     const createNewPack = () => {
-        // set packId to "new"
-        // add a check for if packId=new, then display an empty screen
+        console.log("Create new pack")
+        props.onSelect("")
+    }
+    const deleteFromServer = (packId: string) => {
+        fetch("https://brianevans.tech/projects/school-companion/api.php?packId=" + packId, {
+            method: "DELETE"
+        })
+            .then(r => r.json())
+            .then(json => {
+                console.log(json.message)
+                getFlashcards()
+            })
     }
     return (
         <>
@@ -51,9 +61,7 @@ const FlashCardBrowser: React.FC<{ onSelect: Dispatch<any> }> = (props) => {
                                 backgroundColor: "coral",
                                 cursor: "pointer"
                             }}
-                            onClick={() => {
-                                console.log("User chose to create a new pack")
-                            }}
+                            onClick={createNewPack}
                         >
                             <Typography variant={"h6"}>Create new</Typography>
                             <Typography variant={"body1"} style={{
@@ -70,8 +78,11 @@ const FlashCardBrowser: React.FC<{ onSelect: Dispatch<any> }> = (props) => {
                                    description={flashCardDetails.count + " cards"}
                                    rating={4} onSelect={props.onSelect} key={index}
                                    count={flashCardDetails.count}
+                                   deleteCallback={() => deleteFromServer(flashCardDetails.id)}
                     />
-                )) : <CircularProgress/>}
+                )) : <Grid item xs={9}>
+                    <Typography display={"inline"}>Loading packs </Typography><CircularProgress/>
+                </Grid>}
             </Grid>
         </>
     )
